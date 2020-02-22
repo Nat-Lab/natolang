@@ -681,6 +681,7 @@ ssize_t compile(const char *code, int *out, size_t data_sz) {
     for (int i = D_FUNC; i <= F_EXIT;  i++) {
         NEXT();
         SYM.type = i;
+        SYM.scope_level = -1; // always avaliable.
     }  
 
     pos = code;
@@ -695,7 +696,6 @@ ssize_t compile(const char *code, int *out, size_t data_sz) {
     while (cur != '\0') {
         if (cur == '\0') break;
         STMT(scope_id);
-
     }
 
     *bin++ = EXT;
