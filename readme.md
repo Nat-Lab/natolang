@@ -14,7 +14,7 @@ We got numbers:
 ```
 
 We got math:
-```python
+```c
 10 + 10; # => 10    (ADD)
 10 - 5;  # => 5     (SUB)
 5 * 2;   # => 10    (MUL)
@@ -25,7 +25,7 @@ We got math:
 ```
 
 We got logic:
-```python
+```c
 1 & 1;   # => 1     (AND) (not bitwise)
 0 & 1;   # => 1     (AND) (not bitwise)
 1 | 0;   # => 1     (OR) (not bitwise)
@@ -38,14 +38,14 @@ We got logic:
 ```
 
 We got variables:
-```python
+```c
 var a = 0;
 var b[10] = "nawoji\n";
 var c[10] = { 'n', 'a', 't', 'o', '\n', 0 };
 ```
 
 We got functions:
-```python
+```c
 fun fib {
     # use $1, $2, ... to refer to function arguments.
     if ($1 <= 1) return $1; 
@@ -59,7 +59,7 @@ fib(10); # invoke function.
 ```
 
 Note that all the variable declared will become a global variable, even if it is declared inside function or `{ }`. So if you do this:
-```python
+```c
 fun a {
     var b = 0;
 }
@@ -74,8 +74,8 @@ You will get:
 Because `b` is already declared.
 
 We got `if` and `while`:
-```python
-if (a > 0 ){
+```c
+if (a > 0){
     while (b > 0) b = b - 1;
 } else {
     while (a > 0) a = a - 1;
@@ -83,7 +83,7 @@ if (a > 0 ){
 ```
 
 We got some built-ins:
-```python
+```c
 # takes one parameter, print the result as an integer.
 printi(n); 
 printi(1+1);
@@ -110,7 +110,7 @@ And we use `#` for comment if you haven't already noticed.
 The first thing you need to know is that the idea of the pointer/reference does not exist in `natolang`. (I'm lazy)
 
 So, when you do this:
-```python
+```c
 var a = 0;
 var c[10] = { 'n', 'a', 't', 'o', '\n', 0 };
 ```
@@ -126,7 +126,7 @@ Value       \0  n   a   t   o   \n  \0  \0  \0  \0  \0
 
 That means you can do this:
 
-```python
+```c
 var v1 = { 1, 2, 3 };
 var v2;
 var v3;
@@ -143,7 +143,7 @@ v1: 1, v2: 2, v3: 3, v2[1]: 3
 How could this be fun? Let's take a look at how functions in this cursed language work before we get into that.
 
 If you define a variable with ASM in it:
-```python
+```c
 var asm[20] = {
     39,         # SRS       SubRoutine Start
     2, 'H',     # IMM 'H'   IMMediate
@@ -163,12 +163,12 @@ var asm[20] = {
 ```
 
 Guess what? You can invoke it.
-```python
+```c
 asm(); # => Hello
 ```
 
 Yes, function a just like any other variables too. That means you can do this:
-```python
+```c
 fun self_mod {
     printi(1);
     self_mod[2] = self_mod[2] + 1;
