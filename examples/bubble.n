@@ -1,6 +1,22 @@
-var arr[10] = { 1, 9, 2, 8, 6, 4, 7, 0, 3, 5 };
+var arr[10];
 var i;
 var j;
+
+fun random {
+    114514;
+    random[2] = (22695477 * random[2] + 1) % 2147483648;
+}
+
+fun get_num {
+    var c = getc();
+    var n;
+    n = 0;
+    while (c != '\n') {
+        n = n * 10 + c - '0';
+        c = getc();
+    }
+    n; 
+}
 
 fun printarr {
     i = 0;
@@ -32,6 +48,15 @@ fun sort {
     }
 }
 
+prints("random seed: ");
+random[2] = get_num();
+
+i = 0;
+while (i < 10) {
+    arr[i] = random() % 100;
+    i = i + 1;
+}
+
 prints("before: ");
 printarr();
 
@@ -39,3 +64,5 @@ sort(10);
 
 prints("after:  ");
 printarr();
+
+0;
