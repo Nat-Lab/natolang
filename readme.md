@@ -58,9 +58,45 @@ fun fib {
 fib(10); # invoke function.
 ```
 
+Note that variables in `{ }` are simply scoped variables, not local variables. Think of them as the C static variable. For example, for the following code: 
+```
+var a;
+for (a = 0; a < 5; a = a + 1) {
+    var b;
+    b = b + 1;
+    printi(b);
+    printc(' ');
+}
+```
+The output will be `1 2 3 4 5 `. Note that the `=` in the variable declaration is not initialization. It is an assignment. So if you do:
+```
+var a;
+for (a = 0; a < 5; a = a + 1) {
+    var b = 0;
+    b = b + 1;
+    printi(b);
+    printc(' ');
+}
+```
+You will get `1 1 1 1 1 `.
+
+
+Functions can be nested:
+```c
+fun fa {
+    fun fb {
+        $1 + 1;
+    }
+    fb($1) + 2;
+}
+```
+Nested functions are basically scoped variables. They can't be accessed from the outside. (so you can't invoke `fb` outside `fa`)
+
 We got conditionals and loops:
 ```c
+var a;
 for (a = 0; a < 5; a = a + 1) {
+    var b = 0;
     printi(a);
     if (a == 4) break;
     else if (a == 3) continue;
@@ -69,7 +105,6 @@ for (a = 0; a < 5; a = a + 1) {
         printi(b);
         break;
     }
-
 }
 ```
 

@@ -28,6 +28,17 @@ prints("fib(9)=");
 printi(fib(9));
 printc('\n');
 
+# function can be nested.
+fun fa {
+    fun fb {
+        $1 + 1;
+    }
+    fb($1) + 2;
+}
+printi(fa(1));
+printc('\n')
+
+
 # an array declaration. note that the content of this array is our VM's ASM 
 # code.
 var asm[20] = {
