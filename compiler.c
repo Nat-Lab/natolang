@@ -6,19 +6,31 @@
 #include <string.h>
 #include <stdlib.h>
 #define SYMTAB_SZ 8192
+#define LOOPTBL_SZ 8192
 #define IS_NAME(x) (x >= 'a' && x <= 'z') || (x >= 'A' && x <= 'Z') || x == '_'
 #define IS_NUM(x) (x >= '0' && x <= '9')
 #define NEXT() if (_next() < 0) return -1
 #define EXPR(x) if (_expr(x) < 0) return -1
 #define STMT() if (_stmt() < 0) return -1
 #define CHKDATA() if (data > max_data_sz) { log_error("data region overflowed.\n"); return -1; }
-#define WANT(c) if (cur != c) { log_error("line %d: want '%c', saw %d (%c).\n", line, c, cur, (char) cur); return -1; }
+#define WANT(c) if (cur != c) { \
+        log_error("line %d: want '%c', saw %d", line, c, cur);\
+        if (cur > T_TOKEN) {\
+            fprintf(stderr, " (%-5.5s).\n",\
+            &"TOKENOP   NAME NUM  DFUNCDVAR IF   ELSE WHILEFOR  RET  PRI  PRC  PRS  GETC EXIT ASSIGNOT  OR   AND  NE   EQ   LT   LE   GT   GE   ADD  SUB  MUL  DIV  MOD  LIST STR  "[(cur - T_TOKEN) * 5]);\
+        } else fprintf(stderr, " (%c).\n", (char) cur);\
+        return -1; \
+    }
 #define SYM sym[symi]
+
+int _stmt();
+int _next();
+int _expr(int l);
 
 enum {
     T_TOKEN = 255, T_OPERATOR, T_NAME, T_NUM,
     D_FUNC, D_VAR,
-    TKN_IF, TKN_ELSE, TKN_WHILE, TKN_RETURN,
+    TKN_IF, TKN_ELSE, TKN_WHILE, TKN_FOR, TKN_BREAK, TKN_CONT, TKN_RETURN,
     F_PRINTI, F_PRINTC, F_PRINTS, F_GETC, F_EXIT, // builtins
     O_ASSIG, O_NOT, O_OR, O_AND, O_NE, O_EQ, O_LT, O_LE, O_GT, O_GE,
     O_ADD, O_SUB, O_MUL, O_DIV, O_MOD, O_LIST, O_STR
@@ -43,6 +55,9 @@ static int line = 1;  // line number
 static symbol_t sym[SYMTAB_SZ]; // symbol table
 static int symi = 0; // current symbol table element index
 static int new_sym = 0; // =1 if last next() call reg new symbol
+static int loop_addrs[LOOPTBL_SZ][3];
+static int loopi = 0;
+static int loopid = 0;
 
 const char* symname(int i) {
     static char namebuf[64];
@@ -51,6 +66,16 @@ const char* symname(int i) {
     namebuf[sym[i].name_len] = '\0';
 
     return namebuf;
+}
+
+// set jump values for break/continue
+void patch_loop(int loop_test_addr, int loop_end_addr) {
+    for (int i = 0; i < loopi; i++) {
+        int* loopaddr = loop_addrs[i];
+        if (loopaddr[0] != loopid) break;
+        bin_start[loopaddr[2]] = (loopaddr[1] == TKN_BREAK) ? loop_end_addr : loop_test_addr;
+    }
+
 }
 
 void symdump() {
@@ -551,14 +576,73 @@ int _stmt() {
         EXPR(O_ASSIG);
         *bin++ = JZ;
         int j_addr_pos = bin++ - bin_start;
+        loopid++;
         STMT();
         *bin++ = J;
         *bin++ = test_pos;
         bin_start[j_addr_pos] = bin - bin_start;
+        patch_loop(test_pos, bin_start[j_addr_pos]);
+        loopid--;
+    } else if (cur == TKN_FOR) {
+        NEXT();
+        WANT('(');
+        NEXT();
+
+        EXPR(O_ASSIG);
+        WANT(';');
+        NEXT();
+
+        int test_pos = bin - bin_start;
+        EXPR(O_ASSIG);
+        WANT(';');
+        NEXT();
+
+        *bin++ = JZ;
+        int j_addr_pos = bin++ - bin_start;
+        EXPR(O_ASSIG);
+
+        WANT(')');
+        NEXT();
+
+        loopid++;
+        STMT();
+        *bin++ = J;
+        *bin++ = test_pos;
+        bin_start[j_addr_pos] = bin - bin_start;
+        patch_loop(test_pos, bin_start[j_addr_pos]);
+        loopid--;
     } else if (cur == TKN_RETURN) {
         NEXT();
         if (cur != ';') EXPR(O_ASSIG);
         *bin++ = SRE;
+        WANT(';');
+        NEXT();
+    } else if (cur == TKN_BREAK) { 
+        if (loopid == 0) {
+            log_error("line %d: can't break: not in a loop.\n", line);
+            return -1;
+        }
+        *bin++ = NOP;
+        *bin++ = J;
+        int *l = loop_addrs[loopi++];
+        l[0] = loopid;
+        l[1] = TKN_BREAK;
+        l[2] = bin++ - bin_start;
+        NEXT();
+        WANT(';');
+        NEXT();
+    } else if (cur == TKN_CONT) { 
+        if (loopid == 0) {
+            log_error("line %d: can't continue: not in a loop.\n", line);
+            return -1;
+        }
+        *bin++ = NOP;
+        *bin++ = J;
+        int *l = loop_addrs[loopi++];
+        l[0] = loopid;
+        l[1] = TKN_CONT;
+        l[2] = bin++ - bin_start;
+        NEXT();
         WANT(';');
         NEXT();
     } else if (cur == '{') {
@@ -583,7 +667,7 @@ ssize_t compile(const char *code, int *out, size_t data_sz) {
 
     memset(sym, 0, SYMTAB_SZ);
 
-    pos = "fun var if else while return printi printc prints getc exit";
+    pos = "fun var if else while for break continue return printi printc prints getc exit";
     for (int i = D_FUNC; i <= F_EXIT;  i++) {
         NEXT();
         SYM.type = i;
