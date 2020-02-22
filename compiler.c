@@ -111,21 +111,16 @@ int _next(int scope_id, int isdec) {
             int do_ret = 0;
             int i = 0;
             for (;sym[i].type != 0 && i < SYMTAB_SZ; i++) {
-                log_debug("c_lvl: %d, c_sid: %d, t: %s, lvl: %d, id: %d\n", scope_level, scope_id, symname(i), sym[i].scope_level, sym[i].scope);
                 if (sym[i].name != NULL && name_len == sym[i].name_len && (sym[i].scope == scope_id || (!isdec && sym[i].scope_level < scope_level)) && memcmp(sym[i].name, last_pos, name_len) == 0) {
                     // symbol found.
                     cur = sym[i].type;
                     symi = i;
                     new_sym = 0;
-                    log_debug("found.\n");
                     do_ret = 1;
-                    //return 0;
                 }
             }
 
             if (do_ret) return 0;
-
-            log_debug("new.\n");
             if (i >= SYMTAB_SZ) {
                 log_error("symbol table full.\n");
                 return -1;
