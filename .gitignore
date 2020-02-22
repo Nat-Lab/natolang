@@ -1,0 +1,5 @@
+*.dSYM
+*.bin
+.vscode
+compiler
+vm

@@ -1,0 +1,120 @@
+# a function declaration
+fun get_num {
+    # a variable declaration
+    var c = getc(); # getchar
+    var n;
+    n = 0;
+    while (c != '\n') {
+        n = n * 10 + c - '0';
+        c = getc();
+    }
+    # the return value of a function will be the value of the last expression in 
+    # the function.
+    n; 
+}
+
+fun add_1 {
+    prints("adding 1 to: ");
+
+    # get function parameters with $1, $2, ... etc
+    printi($1);
+    printc('\n');
+    $1 + 1;
+}
+
+# invoke a function. note that all variable declarations are global. since we 
+# declared 'n' in get_num, we can't declare it again here.
+n = add_1(114513);
+printi(n);
+printc('\n');
+
+fun fib {
+    # although function automatically returns the last value, you can return 
+    # manually.
+    if ($1 <= 1) return $1;
+    fib($1-1) + fib($1-2);
+}
+
+prints("fib(9)=");
+printi(fib(9));
+printc('\n');
+
+# an array declaration. note that the content of this array is our VM's ASM 
+# code.
+var asm[20] = {
+    39,         # SRS       SubRoutine Start
+    2, 'H',     # IMM 'H'   IMMediate
+    43,         # PAC       Print Accumulator Char
+    2, 'e',     # IMM 'e'   IMMediate
+    43,         # PAC       Print Accumulator Char
+    2, 'l',     # IMM 'l'   IMMediate
+    43,         # PAC       Print Accumulator Char
+    2, 'l',     # IMM 'l'   IMMediate
+    43,         # PAC       Print Accumulator Char
+    2, 'o',     # IMM 'o'   IMMediate
+    43,         # PAC       Print Accumulator Char
+    2, '\n',    # IMM '\n'  IMMediate
+    43,         # PAC       Print Accumulator Char
+    38,         # SRE       SubRoutine End
+};
+
+# ;) so we can invoke the variable as a function.
+asm(); # prints "Hello"
+
+# arrays are just a normal variable, but with some extra spaces append after 
+# them (size of the space specified with []). so you can consider all non-array 
+# variables as an array of size one. this allow us to do some more fun (cursed) 
+# stuffs.
+
+var v1 = { 1, 2, 3 };
+var v2;
+var v3;
+prints("v1: "); printi(v1); printc('\n'); # prints "1"
+prints("v2: "); printi(v2); printc('\n'); # prints "2"
+prints("v3: "); printi(v3); printc('\n'); # prints "3"
+prints("v2[1]: "); printi(v2[1]); printc('\n'); # prints "3"
+
+# what can you do with this you ask - well, take a look at this:
+fun self_mod {
+    printi(1);
+    self_mod[2] = self_mod[2] + 1;
+}
+
+# self_mod function compiles to:
+#   SRS,
+#   IMM, 1,
+#   PAI,
+#   ...
+#   SRE
+# self_mod[2] is the operand of the IMM op. by changing self_mod[2] we changed 
+# what will be IMM to the register next time. you can modify the function's 
+# code in the same function! isn't that cool?
+
+# every self_mod() call will increment the output by one.
+while (self_mod() < 10);
+printc('\n');
+
+prints("how many times to loop? ");
+var loop = get_num();
+var nawoji[10] = "nawoji\n";
+
+# this is how you use if in natolang. this one is not fun.
+if (n > 3) {
+    prints("wow, so many loops.\n");
+} else {
+    prints("nah\n");
+}
+
+# and you have while
+while (n > 0) {
+    printi(n);
+    prints(": ");
+    prints(nawoji);
+    n = n -1;
+}
+
+# you don't have for-loop, you can't break/continue in a loop, sadly
+
+# and you can exit by exit();
+exit();
+

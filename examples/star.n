@@ -1,0 +1,11 @@
+var i = 0; var j = 0;
+
+while (i < 10) {
+    while (j < i) {
+        printc('*');
+        j = j + 1;
+    }
+    printc('\n');
+    j = 0;
+    i = i + 1;
+}
