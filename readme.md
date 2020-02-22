@@ -73,12 +73,18 @@ You will get:
 ```
 Because `b` is already declared.
 
-We got `if` and `while`:
+We got conditionals and loops:
 ```c
-if (a > 0){
-    while (b > 0) b = b - 1;
-} else {
-    while (a > 0) a = a - 1;
+for (a = 0; a < 5; a = a + 1) {
+    printi(a);
+    if (a == 4) break;
+    else if (a == 3) continue;
+    while (b < 5) {
+        b = b+1;
+        printi(b);
+        break;
+    }
+
 }
 ```
 

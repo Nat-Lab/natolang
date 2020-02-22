@@ -113,8 +113,6 @@ while (n > 0) {
     n = n -1;
 }
 
-# you don't have for-loop, you can't break/continue in a loop, sadly
-
 # and you can exit by exit();
 exit();
 
