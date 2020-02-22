@@ -59,7 +59,7 @@ fib(10); # invoke function.
 ```
 
 Note that variables in `{ }` are simply scoped variables, not local variables. Think of them as the C static variable. For example, for the following code: 
-```
+```c
 var a;
 for (a = 0; a < 5; a = a + 1) {
     var b;
@@ -69,7 +69,7 @@ for (a = 0; a < 5; a = a + 1) {
 }
 ```
 The output will be `1 2 3 4 5 `. Note that the `=` in the variable declaration is not initialization. It is an assignment. So if you do:
-```
+```c
 var a;
 for (a = 0; a < 5; a = a + 1) {
     var b = 0;
