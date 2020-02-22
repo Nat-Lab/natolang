@@ -1,9 +1,8 @@
 # a function declaration
 fun get_num {
     # a variable declaration
-    var c = getc(); # getchar
-    var n;
-    n = 0;
+    var c = getc(); 
+    var n = 0;
     while (c != '\n') {
         n = n * 10 + c - '0';
         c = getc();
@@ -13,18 +12,8 @@ fun get_num {
     n; 
 }
 
-fun add_1 {
-    prints("adding 1 to: ");
-
-    # get function parameters with $1, $2, ... etc
-    printi($1);
-    printc('\n');
-    $1 + 1;
-}
-
-# invoke a function. note that all variable declarations are global. since we 
-# declared 'n' in get_num, we can't declare it again here.
-n = add_1(114513);
+prints("input a number: ");
+var n = get_num();
 printi(n);
 printc('\n');
 
@@ -92,27 +81,13 @@ fun self_mod {
 
 # every self_mod() call will increment the output by one.
 while (self_mod() < 10);
+
+
 printc('\n');
 
-prints("how many times to loop? ");
-var loop = get_num();
-var nawoji[10] = "nawoji\n";
 
-# this is how you use if in natolang. this one is not fun.
-if (n > 3) {
-    prints("wow, so many loops.\n");
-} else {
-    prints("nah\n");
-}
-
-# and you have while
-while (n > 0) {
-    printi(n);
-    prints(": ");
-    prints(nawoji);
-    n = n -1;
-}
-
+# set exit code.
+0;
 # and you can exit by exit();
 exit();
 

@@ -58,21 +58,6 @@ fun fib {
 fib(10); # invoke function.
 ```
 
-Note that all the variable declared will become a global variable, even if it is declared inside function or `{ }`. So if you do this:
-```c
-fun a {
-    var b = 0;
-}
-
-var b;
-```
-You will get:
-```
-[ERROR] _stmt: line 5: symbol 'b' already exist.
-[FATAL] main: failed to compile.
-```
-Because `b` is already declared.
-
 We got conditionals and loops:
 ```c
 for (a = 0; a < 5; a = a + 1) {
