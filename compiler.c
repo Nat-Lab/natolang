@@ -9,10 +9,10 @@
 #define LOOPTBL_SZ 8192
 #define IS_NAME(x) (x >= 'a' && x <= 'z') || (x >= 'A' && x <= 'Z') || x == '_'
 #define IS_NUM(x) (x >= '0' && x <= '9')
-#define NEXT() if (_next(scope_id, 0) < 0) return -1
-#define DNEXT() if (_next(scope_id, 1) < 0) return -1
-#define EXPR(x) if (_expr(scope_id, x) < 0) return -1
-#define STMT(x) if (_stmt(x) < 0) return -1
+#define NEXT() if (_next(0) < 0) return -1
+#define DNEXT() if (_next(1) < 0) return -1
+#define EXPR(x) if (_expr(x) < 0) return -1
+#define STMT() if (_stmt() < 0) return -1
 #define CHKDATA() if (data > max_data_sz) { log_error("data region overflowed.\n"); return -1; }
 #define WANT(c) if (cur != c) { \
         log_error("line %d: want '%c', saw %d", line, c, cur);\
@@ -25,8 +25,8 @@
 #define SYM sym[symi]
 
 int _stmt();
-int _next();
-int _expr(int s, int l);
+int _next(int i);
+int _expr(int l);
 
 enum {
     T_TOKEN = 255, T_OPERATOR, T_NAME, T_NUM,
@@ -62,6 +62,8 @@ static int loop_addrs[LOOPTBL_SZ][3];
 static int loopi = 0;
 static int loopid = 0;
 static int scope_level = 0;
+static int scope_id = 0;
+static int next_scope_id = 1;
 
 const char* symname(int i) {
     static char namebuf[64];
@@ -88,7 +90,7 @@ void symdump() {
     }
 }
 
-int _next(int scope_id, int isdec) {
+int _next(int isdec) {
     while ((cur = *pos) != '\0') {
         pos++;
 
@@ -221,7 +223,7 @@ int _next(int scope_id, int isdec) {
     return 0;
 }
 
-int _expr(int scope_id, int lvl) {
+int _expr(int lvl) {
     if (cur == '\0') {
         log_error("unexpected eof.\n");
         return -1;
@@ -236,7 +238,8 @@ int _expr(int scope_id, int lvl) {
         NEXT();
 
         if (new_sym) {
-            log_error("line %d: undefined symbol %s.\n", line, symname(symi));
+            log_error("line %d: undefined symbol %s (current scope: %d, level: %d).\n", line, symname(symi), scope_id, scope_level);
+            symdump();
             return -1;
         }
 
@@ -481,11 +484,12 @@ int _expr(int scope_id, int lvl) {
     return 0;
 }
 
-int _stmt(int scope_id) {
+int _stmt() {
     if (cur == D_FUNC) { // function // FIXME: move to stmt.
         DNEXT();
         if (!new_sym) {
-            log_error("line %d: symbol '%s' already exist.\n", line, symname(symi));
+            log_error("line %d: symbol '%s' already exist, current scope: %d, level: %d.\n", line, symname(symi), scope_id, scope_level);
+            symdump();
             return -1;
         }
         SYM.type = T_NAME;
@@ -496,14 +500,18 @@ int _stmt(int scope_id) {
         *bin++ = J;
         int j_funcend_pos = bin++ - bin_start;
         *bin++ = SRS;
-        STMT(scope_id + 1);
+        int cur_scope = scope_id;
+        scope_id = next_scope_id++;
+        STMT();
+        scope_id = cur_scope;
         *bin++ = SRE;
         bin_start[j_funcend_pos] = bin - bin_start;
     } else if (cur == D_VAR) { //variable
         DNEXT();
 
         if (!new_sym) {
-            log_error("line %d: symbol '%s' already exist.\n", line, symname(symi));
+            log_error("line %d: symbol '%s' already exist, current scope: %d, level: %d.\n", line, symname(symi), scope_id, scope_level);
+            symdump();
             return -1;
         }
 
@@ -565,7 +573,10 @@ int _stmt(int scope_id) {
         *bin++ = JZ;
         int j_addr_pos = bin++ - bin_start;
 
-        STMT(scope_id + 1);
+        int cur_scope = scope_id;
+        scope_id = next_scope_id++;
+        STMT();
+        scope_id = cur_scope;
 
         if (cur == TKN_ELSE) {
             bin_start[j_addr_pos] = bin - bin_start + 2;
@@ -573,7 +584,10 @@ int _stmt(int scope_id) {
             j_addr_pos = bin++ - bin_start;
 
             NEXT();
-            STMT(scope_id + 1);
+            int cur_scope = scope_id;
+            scope_id = next_scope_id++;
+            STMT();
+            scope_id = cur_scope;
         }
 
         bin_start[j_addr_pos] = bin - bin_start;
@@ -584,7 +598,10 @@ int _stmt(int scope_id) {
         *bin++ = JZ;
         int j_addr_pos = bin++ - bin_start;
         loopid++;
-        STMT(scope_id + 1);
+        int cur_scope = scope_id;
+        scope_id = next_scope_id++;
+        STMT();
+        scope_id = cur_scope;
         *bin++ = J;
         *bin++ = test_pos;
         bin_start[j_addr_pos] = bin - bin_start;
@@ -612,7 +629,10 @@ int _stmt(int scope_id) {
         NEXT();
 
         loopid++;
-        STMT(scope_id + 1);
+        int cur_scope = scope_id;
+        scope_id = next_scope_id++;
+        STMT();
+        scope_id = cur_scope;
         *bin++ = J;
         *bin++ = test_pos;
         bin_start[j_addr_pos] = bin - bin_start;
@@ -655,7 +675,11 @@ int _stmt(int scope_id) {
     } else if (cur == '{') {
         scope_level++;
         NEXT();
-        while (cur != '}') STMT(scope_id + 1);
+        int cur_scope = scope_id;
+        scope_id = next_scope_id++;
+        while (cur != '}') STMT();
+        scope_id = cur_scope;
+
         NEXT();
         scope_level--;
     } else if (cur == ';') {
@@ -695,7 +719,7 @@ ssize_t compile(const char *code, int *out, size_t data_sz) {
     NEXT();
     while (cur != '\0') {
         if (cur == '\0') break;
-        STMT(scope_id);
+        STMT();
     }
 
     *bin++ = EXT;
