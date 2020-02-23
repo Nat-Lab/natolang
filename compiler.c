@@ -29,7 +29,8 @@ const static char* t_names[] = {
     "identifier", "number", "label", "unresloved label", "function declaration",
     "variable declaration", "if", "else", "while", "for", "break",
     "continue", "goto", "return", "printi", "printc", "prints", "getc", "exit",
-    "=", "!", "|", "&", "!=", "<", "<=", ">", ">=", "+", "-", "*", "/", "{", "\""
+    "=", "+=", "-=", "*=", "/=", "%=", "{", "\"", 
+    "!", "|", "&", "!=", "<", "<=", ">", ">=", "+", "-", "*", "/", "++", "--"
 };
 
 int _stmt();
@@ -41,8 +42,9 @@ enum {
     D_FUNC, D_VAR,
     TKN_IF, TKN_ELSE, TKN_WHILE, TKN_FOR, TKN_BREAK, TKN_CONT, TKN_GOTO, TKN_RETURN,
     F_PRINTI, F_PRINTC, F_PRINTS, F_GETC, F_EXIT, // builtins
-    O_ASSIG, O_NOT, O_OR, O_AND, O_NE, O_EQ, O_LT, O_LE, O_GT, O_GE,
-    O_ADD, O_SUB, O_MUL, O_DIV, O_MOD, O_LIST, O_STR
+    O_ASSIG, O_ADDA, O_SUBA, O_MULA, O_DIVA, O_MODA, O_LIST, O_STR, 
+    O_NOT, O_OR, O_AND, O_NE, O_EQ, O_LT, O_LE, O_GT, O_GE,
+    O_ADD, O_SUB, O_MUL, O_DIV, O_MOD, O_INC, O_DEC
 };
 
 typedef struct lbltab lbltab_t;
@@ -244,11 +246,71 @@ int _next(int isdec) {
             cur = O_LT;
             return 0;
         }
-        else if (cur == '+') { cur = O_ADD; return 0; }
-        else if (cur == '-') { cur = O_SUB; return 0; }
-        else if (cur == '*') { cur = O_MUL; return 0; }
-        else if (cur == '/') { cur = O_DIV; return 0; }
-        else if (cur == '%') { cur = O_MOD; return 0; }
+        else if (cur == '+') { 
+            cur = O_ADD; 
+            if (*pos == '+') {
+                pos++;
+                cur = O_INC;
+                return 0;
+            }
+
+            if (*pos == '=') {
+                pos++;
+                cur = O_ADDA;
+                return 0;
+            }
+            
+            return 0; 
+        }
+        else if (cur == '-') { 
+            cur = O_SUB; 
+            if (*pos == '-') {
+                pos++;
+                cur = O_DEC;
+                return 0;
+            }
+
+            if (*pos == '=') {
+                pos++;
+                cur = O_SUBA;
+                return 0;
+            }
+            
+            return 0; 
+        }
+        else if (cur == '*') { 
+            cur = O_MUL; 
+
+            if (*pos == '=') {
+                pos++;
+                cur = O_MULA;
+                return 0;
+            }
+            
+            return 0; 
+        }
+        else if (cur == '/') { 
+            cur = O_DIV; 
+
+            if (*pos == '=') {
+                pos++;
+                cur = O_DIVA;
+                return 0;
+            }
+            
+            return 0; 
+        }
+        else if (cur == '%') { 
+            cur = O_MOD; 
+
+            if (*pos == '=') {
+                pos++;
+                cur = O_MODA;
+                return 0;
+            }
+            
+            return 0; 
+        }
         else if (cur == '&') { cur = O_AND; return 0; }
         else if (cur == '|') { cur = O_OR; return 0; }
         else if (cur == '(' || cur == ')' || cur == '[' || cur == ']' ||
@@ -492,7 +554,7 @@ int _expr(int lvl) {
     while (cur >= lvl) {
         if (cur == O_ASSIG) {
             NEXT();
-            if (bin[-1] != LD) { // prefix not lvalue
+            if (bin[-1] != LD) { // not lvalue
                 log_error("line %d: not lvalue on left of the '='.\n", line);
                 return -1;
             }
@@ -501,6 +563,40 @@ int _expr(int lvl) {
             bin[-1] = PSH;
             EXPR(O_ASSIG);
             *bin++ = SV;
+        } else if (cur >= O_ADDA && cur <= O_MODA) { // +=, -=, /= ...
+            int op = ADD + (cur - O_ADDA);
+            NEXT();
+            if (bin[-1] != LD) { // not lvalue
+                log_error("line %d: not lvalue before op-assig.\n", line);
+                return -1;
+            }
+            bin[-1] = PSH;
+            *bin++ = LD;
+            *bin++ = PSH;
+            EXPR(O_ASSIG);
+            *bin++ = op;
+            *bin++ = SV;
+        } else if (cur == O_INC || cur == O_DEC) { // ++, --
+            int op = cur == O_INC ? ADI : SBI;
+            int ret_old_value = 1; // if var++, return old value before add.
+            NEXT();
+            // current variable not lvalue. maybe next one? (i.e. ++var)
+            if (bin[-1] != LD) {
+                EXPR(O_ASSIG);
+                ret_old_value = 0;
+            }
+            if (bin[-1] != LD) { // still not lvalue?
+                log_error("line %d: not lvalue before/after ++/--.\n", line);
+                return -1;
+            }
+
+            bin[-1] = PSH;
+            *bin++ = LD;
+            if (ret_old_value) *bin++ = PSH;
+            *bin++ = op;
+            *bin++ = 1;
+            *bin++ = SV;
+            if (ret_old_value) *bin++ = POP;
         }
         else if (cur == O_NOT) { NEXT(); *bin++ = PSH; EXPR(O_OR ); *bin++ = NOT; } 
         else if (cur == O_OR ) { NEXT(); *bin++ = PSH; EXPR(O_AND); *bin++ = OR ; } 
@@ -526,7 +622,7 @@ int _expr(int lvl) {
 }
 
 int _stmt() {
-    if (cur == D_FUNC) { // function // FIXME: move to stmt.
+    if (cur == D_FUNC) { // function
         DNEXT();
         if (!new_sym) {
             log_error("line %d: symbol '%s' already exist, current scope: %d, level: %d.\n", line, symname(symi), scope_id, scope_level);
