@@ -211,20 +211,20 @@ How could this be fun? Let's take a look at how functions in this cursed languag
 If you define a variable with ASM in it:
 ```c
 var asm[20] = {
-    39,         # SRS       SubRoutine Start
+    40,         # SRS       SubRoutine Start
     2, 'H',     # IMM 'H'   IMMediate
-    43,         # PAC       Print Accumulator Char
+    44,         # PAC       Print Accumulator Char
     2, 'e',     # IMM 'e'   IMMediate
-    43,         # PAC       Print Accumulator Char
+    44,         # PAC       Print Accumulator Char
     2, 'l',     # IMM 'l'   IMMediate
-    43,         # PAC       Print Accumulator Char
+    44,         # PAC       Print Accumulator Char
     2, 'l',     # IMM 'l'   IMMediate
-    43,         # PAC       Print Accumulator Char
+    44,         # PAC       Print Accumulator Char
     2, 'o',     # IMM 'o'   IMMediate
-    43,         # PAC       Print Accumulator Char
+    44,         # PAC       Print Accumulator Char
     2, '\n',    # IMM '\n'  IMMediate
-    43,         # PAC       Print Accumulator Char
-    38,         # SRE       SubRoutine End
+    44,         # PAC       Print Accumulator Char
+    39,         # SRE       SubRoutine End
 };
 ```
 

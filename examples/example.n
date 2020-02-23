@@ -41,20 +41,20 @@ printc('\n');
 # an array declaration. note that the content of this array is our VM's ASM 
 # code.
 var asm[20] = {
-    39,         # SRS       SubRoutine Start
+    40,         # SRS       SubRoutine Start
     2, 'H',     # IMM 'H'   IMMediate
-    43,         # PAC       Print Accumulator Char
+    44,         # PAC       Print Accumulator Char
     2, 'e',     # IMM 'e'   IMMediate
-    43,         # PAC       Print Accumulator Char
+    44,         # PAC       Print Accumulator Char
     2, 'l',     # IMM 'l'   IMMediate
-    43,         # PAC       Print Accumulator Char
+    44,         # PAC       Print Accumulator Char
     2, 'l',     # IMM 'l'   IMMediate
-    43,         # PAC       Print Accumulator Char
+    44,         # PAC       Print Accumulator Char
     2, 'o',     # IMM 'o'   IMMediate
-    43,         # PAC       Print Accumulator Char
+    44,         # PAC       Print Accumulator Char
     2, '\n',    # IMM '\n'  IMMediate
-    43,         # PAC       Print Accumulator Char
-    38,         # SRE       SubRoutine End
+    44,         # PAC       Print Accumulator Char
+    39,         # SRE       SubRoutine End
 };
 
 # ;) so we can invoke the variable as a function.
