@@ -21,14 +21,15 @@
             fprintf(stderr, " (%s).\n", t_names[cur - T_NAME]);\
         } else fprintf(stderr, " (%c).\n", (char) cur);\
         return -1; \
-    } // TODO
+    }
+#define CHKSYM() if (new_sym) { log_error("line %d: undefined symbol %s (current scope: %d, level: %d).\n", line, symname(symi), scope_id, scope_level); return -1; }
 #define SYM sym[symi]
 #define LBL lbl[lbli]
 
 const static char* t_names[] = {
     "identifier", "number", "label", "plabel", "func_def",
     "var_def", "if", "else", "while", "for", "break",
-    "continue", "goto", "return", "printi", "printc", "prints", "getc", "exit",
+    "continue", "goto", "return", "sizeof", "printi", "printc", "prints", "getc", "exit",
     "=", "+=", "-=", "*=", "/=", "%=", "{", "\"", 
     "!", "|", "&", "!=", "<", "<=", ">", ">=", "+", "-", "*", "/", "++", "--"
 };
@@ -41,7 +42,7 @@ enum {
     T_NAME = 255, T_NUM, T_LBL, T_PLBL,
     D_FUNC, D_VAR,
     TKN_IF, TKN_ELSE, TKN_WHILE, TKN_FOR, TKN_BREAK, TKN_CONT, TKN_GOTO, TKN_RETURN,
-    F_PRINTI, F_PRINTC, F_PRINTS, F_GETC, F_EXIT, // builtins
+    F_SIZEOF, F_PRINTI, F_PRINTC, F_PRINTS, F_GETC, F_EXIT, // builtins
     O_ASSIG, O_ADDA, O_SUBA, O_MULA, O_DIVA, O_MODA, O_LIST, O_STR, 
     O_NOT, O_OR, O_AND, O_NE, O_EQ, O_LT, O_LE, O_GT, O_GE,
     O_ADD, O_SUB, O_MUL, O_DIV, O_MOD, O_INC, O_DEC
@@ -61,6 +62,7 @@ struct symbol {
     int scope;
     int scope_level;
     size_t name_len;
+    int length;
     const char *name;
 };
 
@@ -341,12 +343,7 @@ int _expr(int lvl) {
         symbol_t *s = &SYM;
         NEXT();
 
-        if (new_sym) {
-            log_error("line %d: undefined symbol %s (current scope: %d, level: %d).\n", line, symname(symi), scope_id, scope_level);
-            symdump();
-            return -1;
-        }
-
+        CHKSYM();
         if (cur == '(') { // function call
             NEXT();
             int n_params = 0;
@@ -491,6 +488,21 @@ int _expr(int lvl) {
         *bin++ = IMM;
         *bin++ = '\0'; // end the string.
         NEXT(); // eat '"'
+    } else if (cur == F_SIZEOF) {
+        NEXT();
+        WANT('(');
+        NEXT();
+        if (cur == T_NAME) {
+            CHKSYM();
+            *bin++ = IMM;
+            *bin++ = SYM.length;
+        } else {
+            log_error("line %d: sizeof(): no a variable.\n", line);
+            return -1;
+        }
+        NEXT();
+        WANT(')');
+        NEXT();
     } else if (cur == F_PRINTI) {
         NEXT();
         EXPR(O_ASSIG);
@@ -506,6 +518,7 @@ int _expr(int lvl) {
             NEXT();
             has_p = 1;
         }
+        CHKSYM();
         if (cur == T_NAME) {
             int bin_offset = bin - bin_start;
             *bin++ = J;
@@ -661,8 +674,9 @@ int _stmt() {
             symdump();
             return -1;
         }
-        SYM.type = T_NAME;
-        SYM.val = bin - bin_start + 2;
+        symbol_t *s = &SYM;
+        s->type = T_NAME;
+        s->val = bin - bin_start + 2;
         NEXT();
 
         // jump to end of func (func should not be run as code unless called.)
@@ -677,6 +691,7 @@ int _stmt() {
         scope_level--;
         *bin++ = SRE;
         bin_start[j_funcend_pos] = bin - bin_start;
+        s->length = (bin - bin_start) - (s->val - 2);
     } else if (cur == D_VAR) { //variable
         DNEXT();
 
@@ -698,6 +713,7 @@ int _stmt() {
             int var_addr = data;
             SYM.val = var_addr;
             data += val;
+            SYM.length = val;
             CHKDATA();
             SYM.type = T_NAME;
             NEXT();
@@ -718,10 +734,12 @@ int _stmt() {
             }
         } else if (cur == ';') { // end of var def
             SYM.val = data++;
+            SYM.length = 1;
             CHKDATA();
             SYM.type = T_NAME;
         } else if (cur == O_ASSIG) { 
             SYM.val = data++;
+            SYM.length = 1;
             CHKDATA();
             *bin++ = IMM;
             *bin++ = SYM.val;
@@ -822,7 +840,7 @@ int _stmt() {
         *bin++ = J;
         *bin++ = update_stmt_pos;
         bin_start[j_addr_pos] = bin - bin_start;
-        patch_loop(test_pos, bin_start[j_addr_pos]);
+        patch_loop(update_stmt_pos, bin_start[j_addr_pos]);
         loopid--;
     } else if (cur == TKN_RETURN) {
         NEXT();
@@ -917,7 +935,7 @@ ssize_t compile(const char *code, int *out, size_t data_sz) {
 
     memset(sym, 0, SYMTAB_SZ);
 
-    pos = "fun var if else while for break continue goto return printi printc prints getc exit";
+    pos = "fun var if else while for break continue goto return sizeof printi printc prints getc exit";
     for (int i = D_FUNC; i <= F_EXIT;  i++) {
         NEXT();
         SYM.type = i;
