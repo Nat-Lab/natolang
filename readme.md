@@ -44,6 +44,24 @@ var b[10] = "nawoji\n";
 var c[10] = { 'n', 'a', 't', 'o', '\n', 0 };
 ```
 
+We got assignment operators:
+```c
+var a = 10;
+a += 10;
+a -= 2;
+a *= 4;
+a /= 2;
+a %= 3;
+```
+
+We got increment/decrement:
+```c
+var a = 10;
+a++; ++a;
+a--; --a;
+```
+Note that the good old "pre-increment (`++i`) is faster than post-increment (`i++`)" is true in natolang - since the compiler won't optimize post-increment to pre-increment when the value is not used.
+
 We got functions:
 ```c
 fun fib {
@@ -61,9 +79,9 @@ fib(10); # invoke function.
 Note that variables in `{ }` are simply scoped variables, not local variables. Think of them as the C static variable. For example, for the following code: 
 ```c
 var a;
-for (a = 0; a < 5; a = a + 1) {
+for (a = 0; a < 5; ++a) {
     var b;
-    b = b + 1;
+    b++;
     printi(b);
     printc(' ');
 }
@@ -71,9 +89,9 @@ for (a = 0; a < 5; a = a + 1) {
 The output will be `1 2 3 4 5 `. Note that the `=` in the variable declaration is not initialization. It is an assignment. So if you do:
 ```c
 var a;
-for (a = 0; a < 5; a = a + 1) {
+for (a = 0; a < 5; ++a) {
     var b = 0;
-    b = b + 1;
+    ++b;
     printi(b);
     printc(' ');
 }
@@ -95,13 +113,13 @@ Nested functions are basically scoped variables. They can't be accessed from the
 We got conditionals and loops:
 ```c
 var a;
-for (a = 0; a < 5; a = a + 1) {
+for (a = 0; a < 5; ++a) {
     var b = 0;
     printi(a);
     if (a == 4) break;
     else if (a == 3) continue;
     while (b < 5) {
-        b = b+1;
+        ++b;
         printi(b);
         break;
     }
