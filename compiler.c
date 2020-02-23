@@ -791,10 +791,18 @@ int _stmt() {
 
         *bin++ = JZ;
         int j_addr_pos = bin++ - bin_start;
-        EXPR(O_ASSIG); // FIXME: don't run 3rd expr first time
+
+        *bin++ = J;
+        int j_body_pos = bin++ - bin_start;
+
+        int update_stmt_pos = bin - bin_start;
+        EXPR(O_ASSIG); 
+        *bin++ = J;
+        *bin++ = test_pos;
 
         WANT(')');
         NEXT();
+        bin_start[j_body_pos] = bin - bin_start;
 
         loopid++;
         int cur_scope = scope_id;
@@ -802,7 +810,7 @@ int _stmt() {
         STMT();
         scope_id = cur_scope;
         *bin++ = J;
-        *bin++ = test_pos;
+        *bin++ = update_stmt_pos;
         bin_start[j_addr_pos] = bin - bin_start;
         patch_loop(test_pos, bin_start[j_addr_pos]);
         loopid--;
