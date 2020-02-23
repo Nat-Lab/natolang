@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #define SYMTAB_SZ 8192
 #define LOOPTBL_SZ 8192
+#define LBLTBL_SZ 8192
 #define IS_NAME(x) (x >= 'a' && x <= 'z') || (x >= 'A' && x <= 'Z') || x == '_'
 #define IS_NUM(x) (x >= '0' && x <= '9')
 #define NEXT() if (_next(0) < 0) return -1
@@ -16,35 +17,49 @@
 #define CHKDATA() if (data > max_data_sz) { log_error("data region overflowed.\n"); return -1; }
 #define WANT(c) if (cur != c) { \
         log_error("line %d: want '%c', saw %d", line, c, cur);\
-        if (cur > T_TOKEN) {\
-            fprintf(stderr, " (%-5.5s).\n",\
-            &"TOKENOP   NAME NUM  DFUNCDVAR IF   ELSE WHILEFOR  RET  PRI  PRC  PRS  GETC EXIT ASSIGNOT  OR   AND  NE   EQ   LT   LE   GT   GE   ADD  SUB  MUL  DIV  MOD  LIST STR  "[(cur - T_TOKEN) * 5]);\
+        if (cur > T_NAME && cur <= O_STR) {\
+            fprintf(stderr, " (%s).\n", t_names[cur - T_NAME]);\
         } else fprintf(stderr, " (%c).\n", (char) cur);\
         return -1; \
-    }
+    } // TODO
 #define SYM sym[symi]
+#define LBL lbl[lbli]
+
+const static char* t_names[] = {
+    "identifier", "number", "label", "unresloved label", "function declaration",
+    "variable declaration", "if", "else", "while", "for", "break",
+    "continue", "goto", "return", "printi", "printc", "prints", "getc", "exit",
+    "=", "!", "|", "&", "!=", "<", "<=", ">", ">=", "+", "-", "*", "/", "{", "\""
+};
 
 int _stmt();
 int _next(int i);
 int _expr(int l);
 
 enum {
-    T_TOKEN = 255, T_OPERATOR, T_NAME, T_NUM,
+    T_NAME = 255, T_NUM, T_LBL, T_PLBL,
     D_FUNC, D_VAR,
-    TKN_IF, TKN_ELSE, TKN_WHILE, TKN_FOR, TKN_BREAK, TKN_CONT, TKN_RETURN,
+    TKN_IF, TKN_ELSE, TKN_WHILE, TKN_FOR, TKN_BREAK, TKN_CONT, TKN_GOTO, TKN_RETURN,
     F_PRINTI, F_PRINTC, F_PRINTS, F_GETC, F_EXIT, // builtins
     O_ASSIG, O_NOT, O_OR, O_AND, O_NE, O_EQ, O_LT, O_LE, O_GT, O_GE,
     O_ADD, O_SUB, O_MUL, O_DIV, O_MOD, O_LIST, O_STR
 };
 
+typedef struct lbltab lbltab_t;
+struct lbltab {
+    int jaddr;
+    int next;
+};
+
+
 typedef struct symbol symbol_t;
 struct symbol {
-    int type;           // type. 
-    int val;            // address of variable (T_NAME)
+    int type;
+    int val;
     int scope;
     int scope_level;
     size_t name_len;
-    const char *name;   // name.
+    const char *name;
 };
 
 static const char *pos = NULL; // position in source 
@@ -64,6 +79,8 @@ static int loopid = 0;
 static int scope_level = 0;
 static int scope_id = 0;
 static int next_scope_id = 1;
+static lbltab_t lbl[LBLTBL_SZ];
+static int lbli = 0;
 
 const char* symname(int i) {
     static char namebuf[64];
@@ -78,7 +95,8 @@ const char* symname(int i) {
 void patch_loop(int loop_test_addr, int loop_end_addr) {
     for (int i = 0; i < loopi; i++) {
         int* loopaddr = loop_addrs[i];
-        if (loopaddr[0] != loopid) break;
+        if (loopaddr[0] != loopid) continue;
+        loopaddr[0] = -1;
         bin_start[loopaddr[2]] = (loopaddr[1] == TKN_BREAK) ? loop_end_addr : loop_test_addr;
     }
 
@@ -122,7 +140,22 @@ int _next(int isdec) {
                 }
             }
 
-            if (do_ret) return 0;
+            if (do_ret) {
+                if (SYM.type == T_PLBL) { // was refered to by prev goto stmt.
+                    lbltab_t *l = lbl + SYM.val;
+                    do {
+                        bin_start[l->jaddr] = bin - bin_start;
+                    } while (l->next != 0);
+                    SYM.type = T_LBL;
+                    SYM.val = bin - bin_start;
+                    if (*pos++ != ':') {
+                        log_error("line %d: label must ends with ':'.\n", line);
+                        return -1;
+                    }
+                    continue;
+                }
+                return 0;
+            }
             if (i >= SYMTAB_SZ) {
                 log_error("symbol table full.\n");
                 return -1;
@@ -130,13 +163,22 @@ int _next(int isdec) {
 
             new_sym = 1;
             // not exist, create
-            sym[i].type = T_NAME;
-            sym[i].name = last_pos;
-            sym[i].name_len = name_len;
-            sym[i].scope = scope_id;
-            sym[i].scope_level = scope_level;
-            cur = T_NAME;
             symi = i;
+            SYM.type = T_NAME;
+            SYM.name = last_pos;
+            SYM.name_len = name_len;
+            SYM.scope = scope_id;
+            SYM.scope_level = scope_level;
+            
+
+            if (*pos == ':') { // the name is a label.
+                pos++;
+                SYM.type = T_LBL;
+                SYM.val =  bin - bin_start;
+                continue;
+            }
+            cur = SYM.type;
+
             return 0;
         } else if (IS_NUM(cur)) {
             // number
@@ -211,7 +253,7 @@ int _next(int isdec) {
         else if (cur == '|') { cur = O_OR; return 0; }
         else if (cur == '(' || cur == ')' || cur == '[' || cur == ']' ||
                  cur == '{' || cur == '}' || cur == ';' || cur == ',' || 
-                 cur == '$' || cur == '"') {
+                 cur == '$' || cur == '"' || cur == ':') {
             return 0;
         }
         else {
@@ -409,7 +451,6 @@ int _expr(int lvl) {
             *bin++ = SV;
             *bin++ = J;
             *bin++ = test_pos; // jump to start of test
-            *bin++ = NOP;
         } else if (cur == '"') {
             cur = *pos++;
             while (cur != '"') {
@@ -566,7 +607,6 @@ int _stmt() {
             log_error("line %d: want '=', '[' or ';'.\n", line);
             return -1;
         }
-
     } else if (cur == TKN_IF) {
         NEXT();
         EXPR(O_ASSIG);
@@ -649,7 +689,6 @@ int _stmt() {
             log_error("line %d: can't break: not in a loop.\n", line);
             return -1;
         }
-        *bin++ = NOP;
         *bin++ = J;
         int *l = loop_addrs[loopi++];
         l[0] = loopid;
@@ -663,12 +702,44 @@ int _stmt() {
             log_error("line %d: can't continue: not in a loop.\n", line);
             return -1;
         }
-        *bin++ = NOP;
         *bin++ = J;
         int *l = loop_addrs[loopi++];
         l[0] = loopid;
         l[1] = TKN_CONT;
         l[2] = bin++ - bin_start;
+        NEXT();
+        WANT(';');
+        NEXT();
+    } else if (cur == TKN_GOTO) { 
+        NEXT();
+        if (cur != T_LBL && !new_sym) {
+            log_error("line %d: goto: '%s' is not a label.\n", line, symname(symi));
+            return -1;
+        } else if (cur == T_NAME && new_sym) {
+            SYM.type = T_PLBL; // lbl not exist yet, make it a pending label
+            *bin++ = J;
+            LBL.jaddr = bin++ - bin_start;
+            LBL.next = 0;
+            SYM.val = lbli++;
+        } else if (cur == T_PLBL) {
+            // already pending non-resolved label
+            *bin++ = J;
+            LBL.jaddr = bin++ - bin_start;
+            LBL.next = 0;
+            lbltab_t *l = lbl + SYM.val;
+
+            while (l->next != 0) { // find next empt
+                l = lbl + l->next;
+            }
+            l->next = lbli++;
+        } else if (cur == T_LBL) {
+            *bin++ = J;
+            *bin++ = SYM.val;
+        } else {
+            log_error("line %d: goto: bad label.\n", line);
+            return -1;
+        }
+        
         NEXT();
         WANT(';');
         NEXT();
@@ -697,11 +768,10 @@ ssize_t compile(const char *code, int *out, size_t data_sz) {
     bin_start = out;
     bin = bin_start + data_sz;
     max_data_sz = data_sz;
-    int scope_id = 0;
 
     memset(sym, 0, SYMTAB_SZ);
 
-    pos = "fun var if else while for break continue return printi printc prints getc exit";
+    pos = "fun var if else while for break continue goto return printi printc prints getc exit";
     for (int i = D_FUNC; i <= F_EXIT;  i++) {
         NEXT();
         SYM.type = i;
