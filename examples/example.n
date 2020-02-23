@@ -36,8 +36,7 @@ fun fa {
     fb($1) + 2;
 }
 printi(fa(1));
-printc('\n')
-
+printc('\n');
 
 # an array declaration. note that the content of this array is our VM's ASM 
 # code.
@@ -93,9 +92,7 @@ fun self_mod {
 # every self_mod() call will increment the output by one.
 while (self_mod() < 10);
 
-
 printc('\n');
-
 
 # set exit code.
 0;

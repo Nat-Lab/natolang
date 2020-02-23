@@ -1,6 +1,4 @@
 var arr[10];
-var i;
-var j;
 
 fun random {
     114514;
@@ -19,7 +17,7 @@ fun get_num {
 }
 
 fun printarr {
-    i = 0;
+    var i = 0;
     while (i < 10) {
         printi(arr[i]);
         printc(' ');
@@ -33,9 +31,9 @@ fun sort {
     printi($1);
     prints(" elements\n");
     var tmp;
-    i = 0; 
+    var i = 0; 
     while (i < $1) {
-        j = 0;
+        var j = 0;
         while (j < $1) {
             if (arr[i] > arr[j]) {
                 tmp = arr[i];
@@ -51,7 +49,7 @@ fun sort {
 prints("random seed: ");
 random[2] = get_num();
 
-i = 0;
+var i = 0;
 while (i < 10) {
     arr[i] = random() % 100;
     i = i + 1;
