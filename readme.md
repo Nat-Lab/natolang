@@ -1,6 +1,6 @@
 natolang: A cursed programing language
 ---
-I created a virtual machine that has some simple instructions long ago to practice writing in assembly. At that time I don't have much clue on how you can make a compiler - I can write in assembly, I can write a parser, but I just didn't have any clue on how to make a compiler.
+I created a 32-bits addressable virtual machine that has some simple instructions long ago to practice writing in assembly. At that time I don't have much clue on how you can make a compiler - I can write in assembly, I can write a parser, but I just didn't have any clue on how to make a compiler.
 
 Years have gone by. Now I actually feel like I can make a compiler myself. So I did. And this was the result. It's cursed, but it is fun.
 
@@ -10,7 +10,7 @@ Before we get into the fun part, let's take a look at the basics of the language
 
 #### Datatype
 
-The only datatype in `natolang` is 32-bit int.
+The only datatype in `natolang` is 32-bit int. (Since the target VM is 32-bits addressable.)
 
 ```
 123;   # => 123
@@ -57,6 +57,7 @@ var a = 0;
 var b[10] = "nawoji\n";
 var c[10] = { 'n', 'a', 't', 'o', '\n', 0 };
 ```
+Note that we don't have n-D arrays, only 1-D arrays.
 
 You can use assignment operators on variables:
 ```c
@@ -67,6 +68,8 @@ a *= 4;
 a /= 2;
 a %= 3;
 ```
+Note that the initializer list and literal and not a pointer type. There's no such thing as a pointer in `natolang`. More on that later.
+
 
 And also increment/decrement:
 ```c
@@ -75,6 +78,27 @@ a++; ++a;
 a--; --a;
 ```
 Note that the good old "pre-increment (`++i`) is faster than post-increment (`i++`)" is true in `natolang` - since the compiler won't optimize post-increment to pre-increment when the value is not used.
+
+#### Address Operators
+
+You may get the address of a variable or write to an address with `*` and `&` operator:
+
+```
+var a = 0;
+var b = &a;
+*b = 1;
+printi(a); # prints "1"
+```
+
+Note that `b` is not a pointer type - `*` just allows you to use the value of a variable as address, and `&` operator simply returns number, and "arrays" are not pointers too. More specifically:
+
+```c
+var a[10] = {100, 200, 300};
+printi(a); # prints "100"
+*(&a+1) = 10;
+printi(a[1]); # prints "10"
+```
+
 
 #### Flow Controls
 
@@ -151,6 +175,9 @@ prints("Hello, world!\n");
 # getchar. takes no parameter, get and return one char from stdin.
 c = getc();
 
+# returns the number of 32-bits size memory blocks allocated for this variable.
+sz = sizeof(c);
+
 # exit.
 exit();
 ```
@@ -195,7 +222,7 @@ And we use `#` for comment if you haven't already noticed.
 
 ### The Funs (and curses)
 
-The first thing you need to know is that the idea of the pointer/reference does not exist in `natolang`. (I'm lazy)
+The first thing you need to know is that the idea of the pointer/reference does not exist in `natolang`, in the sense that there's no actual pointer type. (I'm lazy)
 
 So, when you do this:
 ```c
@@ -212,7 +239,9 @@ Variable    a   c   c   c   c   c   c   c   c   c   c
 Value       \0  n   a   t   o   \n  \0  \0  \0  \0  \0 
 ```
 
-That means you can do this:
+And this is why we don't have n-D arrays. Since what looks like an array are just a big variable.  
+
+Also, you can do this:
 
 ```c
 var v1 = { 1, 2, 3 };

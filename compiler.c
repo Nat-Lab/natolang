@@ -584,6 +584,20 @@ int _expr(int lvl) {
         WANT(')');
         NEXT();
         *bin++ = EXT;
+    } else if (cur == O_AND) {
+        NEXT();
+        if (cur != T_NAME) {
+            log_error("line %d: bad get-addr-of: not a variable.\n", line);
+            return -1;
+        }
+        *bin++ = IMM;
+        *bin++ = SYM.val;
+        NEXT();
+    } else if (cur == O_MUL) {
+        NEXT();
+        int pre_load_pos = bin - bin_start;
+        EXPR(O_ADD);
+        else *bin++ = LD;
     }
 
     while (cur >= lvl) {
