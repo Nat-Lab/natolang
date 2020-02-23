@@ -590,9 +590,19 @@ int _expr(int lvl) {
                 return -1;
             }
 
-            bin[-1] = PSH;
-            *bin++ = LD;
-            if (ret_old_value) *bin++ = PSH;
+            if (ret_old_value) {
+                int var_addr = bin[-2];
+                bin[-1] = LD;
+                *bin++ = PSH;
+                *bin++ = IMM;
+                *bin++ = var_addr;
+                *bin++ = PSH;
+                *bin++ = LD;
+            } else {
+                bin[-1] = PSH;
+                *bin++ = LD;
+            }
+            
             *bin++ = op;
             *bin++ = 1;
             *bin++ = SV;
