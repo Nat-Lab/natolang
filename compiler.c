@@ -26,8 +26,8 @@
 #define LBL lbl[lbli]
 
 const static char* t_names[] = {
-    "identifier", "number", "label", "unresloved label", "function declaration",
-    "variable declaration", "if", "else", "while", "for", "break",
+    "identifier", "number", "label", "plabel", "func_def",
+    "var_def", "if", "else", "while", "for", "break",
     "continue", "goto", "return", "printi", "printc", "prints", "getc", "exit",
     "=", "+=", "-=", "*=", "/=", "%=", "{", "\"", 
     "!", "|", "&", "!=", "<", "<=", ">", ">=", "+", "-", "*", "/", "++", "--"
@@ -106,7 +106,7 @@ void patch_loop(int loop_test_addr, int loop_end_addr) {
 
 void symdump() {
     for (int i = 0; i < SYMTAB_SZ && sym[i].type != 0; i++) {
-        fprintf(stderr, "%10s: type: %d, val: %d, scope_id: %d, scope_level: %d.\n", symname(i), sym[i].type, sym[i].val, sym[i].scope, sym[i].scope_level);
+        fprintf(stderr, "%10s: type: %12s, val: %5d, scope_id: %5d, scope_level: %d.\n", symname(i), t_names[sym[i].type - T_NAME], sym[i].val, sym[i].scope, sym[i].scope_level);
     }
 }
 
@@ -670,9 +670,11 @@ int _stmt() {
         int j_funcend_pos = bin++ - bin_start;
         *bin++ = SRS;
         int cur_scope = scope_id;
+        scope_level++;
         scope_id = next_scope_id++;
         STMT();
         scope_id = cur_scope;
+        scope_level--;
         *bin++ = SRE;
         bin_start[j_funcend_pos] = bin - bin_start;
     } else if (cur == D_VAR) { //variable
@@ -742,9 +744,11 @@ int _stmt() {
         int j_addr_pos = bin++ - bin_start;
 
         int cur_scope = scope_id;
+        scope_level++;
         scope_id = next_scope_id++;
         STMT();
         scope_id = cur_scope;
+        scope_level--;
 
         if (cur == TKN_ELSE) {
             bin_start[j_addr_pos] = bin - bin_start + 2;
@@ -753,9 +757,11 @@ int _stmt() {
 
             NEXT();
             int cur_scope = scope_id;
+            scope_level++;
             scope_id = next_scope_id++;
             STMT();
             scope_id = cur_scope;
+            scope_level--;
         }
 
         bin_start[j_addr_pos] = bin - bin_start;
@@ -768,7 +774,9 @@ int _stmt() {
         loopid++;
         int cur_scope = scope_id;
         scope_id = next_scope_id++;
+        scope_level++;
         STMT();
+        scope_level--;
         scope_id = cur_scope;
         *bin++ = J;
         *bin++ = test_pos;
@@ -807,7 +815,9 @@ int _stmt() {
         loopid++;
         int cur_scope = scope_id;
         scope_id = next_scope_id++;
+        scope_level++;
         STMT();
+        scope_level--;
         scope_id = cur_scope;
         *bin++ = J;
         *bin++ = update_stmt_pos;
