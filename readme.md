@@ -83,7 +83,7 @@ Note that the good old "pre-increment (`++i`) is faster than post-increment (`i+
 
 You may get the address of a variable or write to an address with `*` and `&` operator:
 
-```
+```c
 var a = 0;
 var b = &a;
 *b = 1;
@@ -302,6 +302,33 @@ Every time you call `self_mod`, it's output will be increased by one. The `self_
 XX   SRE
 ```
 By changing `self_mod[2]`, we changed what will be `IMM` to the register next time. This is a function that modifies itself, quite fun, isn't it?
+
+A more involved example will be to search for a certain instruction in function's code and change it:
+
+```c
+fun do_op {
+    $1 + 10;
+}
+
+fun find_op {
+    var i;
+    for (i = 0; i < $2; i++) {
+        # looks for "IMM 10; ADD" i.e. "+ 10";
+        if (*($1 + i) == 2 & *($1 + i + 1) == 10 & *($1 + i + 2) == 20 & *($1 + i + 3) == 39) {
+            prints("'+' is at: ");
+            printi(i+2);
+            printc('\n');
+            break;
+        }
+    }
+    i + 2;
+}
+
+printi(do_op(20)); # prints "30" (20 + 10)
+printc('\n');
+do_op[find_op(&do_op, sizeof(do_op))] = 22; # opcode for MUL (*)
+printi(do_op(5)); # prints "50" (5 * 10)
+```
 
 ### The VM
 
