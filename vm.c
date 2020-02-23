@@ -22,13 +22,13 @@ int vm (int32_t *mem,int32_t sp, int debug) {
         int32_t i = mem[pc++];
         if (debug) {
             fprintf(stderr, "%09d: pc: %6d, sp: %6d, fp: %6d, a: %6d, i: %3d | %-3.3s", cycles, pc - 1, sp, fp, acc, i,
-                &"ARGADJIMMJ  JS JZ JNZADISBIMUIDIIMDIEQINEIGTILTIGEILEIANIORIADDSUBMULDIVMODEQ NE GT LT GE LE ANDOR NOTLD SV PSHPOPSRESRSPSIPSCPAIPACGC EXTNOP"[i*3]
+                &"ARGADJIMMJ  JS JZ JNZADISBIMUIDIIMDIEQINEIGTILTIGEILEIANIORIADDSUBMULDIVMODEQ NE GT LT GE LE ANDOR NOTLD SV LA PSHPOPSRESRSPSIPSCPAIPACGC EXTNOP"[i*3]
             );
             if (i < ADD) fprintf(stderr, " %d", mem[pc]);
             fprintf(stderr, "\n");
         }
         
-        /**/ if (i == ARG) acc = mem[fp + mem[pc++] + 1];
+        /**/ if (i == ARG) acc = mem[fp + mem[pc++]];
         else if (i == ADJ) sp += mem[pc++];
         else if (i == IMM) acc = mem[pc++];
         else if (i == J  ) pc = mem[pc];
@@ -65,6 +65,7 @@ int vm (int32_t *mem,int32_t sp, int debug) {
         else if (i == NOT) acc = !acc;
         else if (i == LD ) acc = mem[acc];
         else if (i == SV ) mem[mem[sp++]] = acc;
+        else if (i == LA ) acc = mem[fp + acc];
         else if (i == PSH) mem[--sp] = acc;
         else if (i == POP) acc = mem[sp++];
         else if (i == SRS) { mem[--sp] = fp; fp = sp; }

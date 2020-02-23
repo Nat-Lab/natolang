@@ -360,19 +360,20 @@ int _expr(int lvl) {
                 NEXT(); // eats ','
             }
 
+            *bin++ = IMM;
+            *bin++ = n_params;
+            *bin++ = PSH;
+
             if (s->type == T_NAME) {
                 *bin++ = JS;
                 *bin++ = s->val;
-            } else /* if (s->type == ...) */ {
-                // TODO: other syscalls
+            } else {
                 log_error("line %d: bad function call.\n", line);
                 return -1;
             }
 
-            if (n_params > 0) {
-                *bin++ = ADJ;
-                *bin++ = n_params;
-            }
+            *bin++ = ADJ;
+            *bin++ = n_params + 1;
 
             NEXT(); // eat ')'
         } else if (cur == '[') { // address offset
@@ -398,12 +399,33 @@ int _expr(int lvl) {
         NEXT();
     } else if (cur == '$') {
         NEXT();
-        if (cur != T_NUM) {
-            log_error("line %d: param accesser must be number.\n", line);
+        if (cur == '$') {
+            *bin++ = ARG;
+            *bin++ = 2;
+        } else if (cur == '(') {
+            NEXT();
+            EXPR(O_ASSIG);
+            WANT(')');
+            *bin++ = SBI;
+            *bin++ = 3;
+            *bin++ = PSH;
+            *bin++ = ARG;
+            *bin++ = 2;
+            *bin++ = SUB;
+            *bin++ = MUI;
+            *bin++ = -1;
+            *bin++ = LA;
+        } else if (cur == T_NUM) {
+            *bin++ = ARG;
+            *bin++ = 2;
+            *bin++ = SBI;
+            *bin++ = val - 3;
+            *bin++ = LA;
+        } else {
+            log_error("line %d: invalid param accesser.\n", line);
             return -1;
         }
-        *bin++ = ARG;
-        *bin++ = val;
+
         NEXT();
     } else if (cur == '!') {
         EXPR(O_ASSIG);
@@ -763,13 +785,13 @@ int _stmt() {
         NEXT();
 
         int test_pos = bin - bin_start;
-        EXPR(O_ASSIG);
+        EXPR(O_ASSIG); 
         WANT(';');
         NEXT();
 
         *bin++ = JZ;
         int j_addr_pos = bin++ - bin_start;
-        EXPR(O_ASSIG);
+        EXPR(O_ASSIG); // FIXME: don't run 3rd expr first time
 
         WANT(')');
         NEXT();

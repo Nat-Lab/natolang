@@ -21,6 +21,7 @@ enum {
     AND, OR, NOT, // logic
     LD,  // load val at addr in acc to acc
     SV,  // save acc to stacktop addr
+    LA,  // load acc th function param to acc
     PSH, // push acc to stack
     POP, // pop stack to acc
     SRE, // end subroutine: restore fp & sp
