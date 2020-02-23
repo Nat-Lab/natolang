@@ -6,14 +6,23 @@ Years have gone by. Now I actually feel like I can make a compiler myself. So I 
 
 ### The Language
 
+Before we get into the fun part, let's take a look at the basics of the language. 
+
+#### Datatype
+
 The only datatype in `natolang` is 32-bit int.
 
-We got numbers:
 ```
 123;   # => 123
+1.2;   # bad token '.', won't compile.
+'a';   # => 97
+'aa';  # => 1067 (97 * 10 + 97)
 ```
 
-We got math:
+#### Math
+
+Maths. Like any other programing language, we need basic math.
+
 ```c
 10 + 10; # => 10    (ADD)
 10 - 5;  # => 5     (SUB)
@@ -24,27 +33,32 @@ We got math:
 !1;      # => 0     (NOT)
 ```
 
-We got logic:
+#### Logics
+
+We got logic too. Pretty much the same as any other programing language except we use `&` and `|` for logic AND and OR.
+
 ```c
 1 & 1;   # => 1     (AND) (not bitwise)
-0 & 1;   # => 1     (AND) (not bitwise)
+0 & 1;   # => 0     (AND) (not bitwise)
 1 | 0;   # => 1     (OR) (not bitwise)
 1 == 1;  # => 1     (EQ)
 2 > 1;   # => 1     (GT)
-2 < 1;   # => 1     (LT)
+2 < 1;   # => 0     (LT)
 2 >= 1;  # => 1     (GE)
-2 <= 1;  # => 1     (LE)
+2 <= 1;  # => 0     (LE)
 2 != 1;  # => 1     (NE)
 ```
+#### Variables
 
-We got variables:
+The syntax is similar to C, but the way they work is fundamentally different. We will talk about that later.
+
 ```c
 var a = 0;
 var b[10] = "nawoji\n";
 var c[10] = { 'n', 'a', 't', 'o', '\n', 0 };
 ```
 
-We got assignment operators:
+You can use assignment operators on variables:
 ```c
 var a = 10;
 a += 10;
@@ -54,7 +68,7 @@ a /= 2;
 a %= 3;
 ```
 
-We got increment/decrement:
+And also increment/decrement:
 ```c
 var a = 10;
 a++; ++a;
@@ -62,7 +76,34 @@ a--; --a;
 ```
 Note that the good old "pre-increment (`++i`) is faster than post-increment (`i++`)" is true in natolang - since the compiler won't optimize post-increment to pre-increment when the value is not used.
 
-We got functions:
+#### Flow Controls
+
+We got conditionals and loops. They should work as you imagined.
+```c
+var a;
+for (a = 0; a < 5; ++a) {
+    var b = 0;
+    printi(a);
+    if (a == 4) break;
+    else if (a == 3) continue;
+    while (b < 5) {
+        ++b;
+        printi(b);
+        break;
+    }
+}
+```
+
+And we got goto:
+```c
+lbl1:
+prints("Hello\n");
+goto lbl1;
+```
+
+#### Functions
+
+Function declaration looks like bash, and you access function parameters like bash:
 ```c
 fun fib {
     # use $1, $2, ... to refer to function arguments.
@@ -76,7 +117,7 @@ fun fib {
 fib(10); # invoke function.
 ```
 
-Arguments count can be accessed with `$$`. Also, function arguments can be accessed with `$(expression)`, like this:
+Arguments count can be accessed with `$$`, and function arguments can be accessed with `$(expression)`, like this:
 
 ```c
 fun printvars {
@@ -91,7 +132,32 @@ fun printvars {
 printvars(1, 1, 4, 5, 1, 4); # prints "114514"
 ```
 
-Note that variables in `{ }` are simply scoped variables, not local variables. Think of them as the C static variable. For example, for the following code: 
+#### Built-ins
+We got some built-in functions (actually, they are handled as operator):
+```c
+# takes one parameter, print the result as an integer.
+printi(n); 
+printi(1+1);
+
+# takes one parameter, print the result as an integer.
+printc(n); 
+printc('a' + 1); 
+
+# prints takes one parameter and print it as string, the parameter must be a 
+# variable or a string literal.
+prints(n); 
+prints("Hello, world!\n");
+
+# getchar. takes no parameter, get and return one char from stdin.
+c = getc();
+
+# exit.
+exit();
+```
+
+#### Others
+
+Variables in `{ }` are simply scoped variables, not local variables. Think of them as the C static variable. For example, for the following code: 
 ```c
 var a;
 for (a = 0; a < 5; ++a) {
@@ -125,50 +191,6 @@ fun fa {
 ```
 Nested functions are basically scoped variables. They can't be accessed from the outside. (so you can't invoke `fb` outside `fa`)
 
-We got conditionals and loops:
-```c
-var a;
-for (a = 0; a < 5; ++a) {
-    var b = 0;
-    printi(a);
-    if (a == 4) break;
-    else if (a == 3) continue;
-    while (b < 5) {
-        ++b;
-        printi(b);
-        break;
-    }
-}
-```
-
-We got goto:
-```
-lbl1:
-prints("Hello\n");
-goto lbl1;
-```
-
-We got some built-ins:
-```c
-# takes one parameter, print the result as an integer.
-printi(n); 
-printi(1+1);
-
-# takes one parameter, print the result as an integer.
-printc(n); 
-printc('a' + 1); 
-
-# prints takes one parameter and print it as string, the parameter must be a 
-# variable or a string literal.
-prints(n); 
-prints("Hello, world!\n");
-
-# getchar. takes no parameter, get and return one char from stdin.
-c = getc();
-
-# exit.
-exit();
-```
 And we use `#` for comment if you haven't already noticed.
 
 ### The Funs (and curses)
