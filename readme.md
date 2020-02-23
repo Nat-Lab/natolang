@@ -74,7 +74,7 @@ var a = 10;
 a++; ++a;
 a--; --a;
 ```
-Note that the good old "pre-increment (`++i`) is faster than post-increment (`i++`)" is true in natolang - since the compiler won't optimize post-increment to pre-increment when the value is not used.
+Note that the good old "pre-increment (`++i`) is faster than post-increment (`i++`)" is true in `natolang` - since the compiler won't optimize post-increment to pre-increment when the value is not used.
 
 #### Flow Controls
 
@@ -125,7 +125,7 @@ fun printvars {
     prints("number of args: ");
     printi($$);
     printc('\n');
-    for (i = 1; i <= $$; i++) printi($(i));
+    for (i = 1; i <= $$; ++i) printi($(i));
     printc('\n');
 }
 
@@ -162,7 +162,7 @@ Variables in `{ }` are simply scoped variables, not local variables. Think of th
 var a;
 for (a = 0; a < 5; ++a) {
     var b;
-    b++;
+    ++b;
     printi(b);
     printc(' ');
 }
