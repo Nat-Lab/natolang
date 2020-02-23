@@ -108,6 +108,13 @@ for (a = 0; a < 5; a = a + 1) {
 }
 ```
 
+We got goto:
+```
+lbl1:
+prints("Hello\n");
+goto lbl1;
+```
+
 We got some built-ins:
 ```c
 # takes one parameter, print the result as an integer.
