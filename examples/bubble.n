@@ -32,17 +32,16 @@ fun sort {
     prints(" elements\n");
     var tmp;
     var i = 0; 
-    while (i < $1) {
+
+    for (; i < $1; i++) {
         var j = 0;
-        while (j < $1) {
+        for (; j < $1; j++) {
             if (arr[i] > arr[j]) {
                 tmp = arr[i];
                 arr[i] = arr[j];
                 arr[j] = tmp;
             }
-            j = j + 1;
         }
-        i = i + 1;
     }
 }
 
