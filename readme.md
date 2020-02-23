@@ -76,6 +76,21 @@ fun fib {
 fib(10); # invoke function.
 ```
 
+Arguments count can be accessed with `$$`. Also, function arguments can be accessed with `$(expression)`, like this:
+
+```c
+fun printvars {
+    var i;
+    prints("number of args: ");
+    printi($$);
+    printc('\n');
+    for (i = 1; i <= $$; i++) printi($(i));
+    printc('\n');
+}
+
+printvars(1, 1, 4, 5, 1, 4); # prints "114514"
+```
+
 Note that variables in `{ }` are simply scoped variables, not local variables. Think of them as the C static variable. For example, for the following code: 
 ```c
 var a;
@@ -218,7 +233,7 @@ Guess what? You can invoke it.
 asm(); # => Hello
 ```
 
-Yes, function a just like any other variables too. That means you can do this:
+Yes, function a just like any other variables. That means you can do this:
 ```c
 fun self_mod {
     printi(1);
@@ -260,6 +275,7 @@ enum {
     AND, OR, NOT, // logic
     LD,  // load val at addr in acc to acc
     SV,  // save acc to stacktop addr
+    LA,  // load acc th function param to acc
     PSH, // push acc to stack
     POP, // pop stack to acc
     SRE, // end subroutine: restore fp & sp
