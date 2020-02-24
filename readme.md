@@ -57,7 +57,7 @@ var a = 0;
 var b[10] = "nawoji\n";
 var c[10] = { 'n', 'a', 't', 'o', '\n', 0 };
 ```
-Note that we don't have n-D arrays, only 1-D arrays.
+Note that we don't have n-D arrays, only 1-D arrays. Also, the initializer list and literal and not a pointer type. There's no such thing as a pointer in `natolang`. More on that later.
 
 You can use assignment operators on variables:
 ```c
@@ -68,8 +68,6 @@ a *= 4;
 a /= 2;
 a %= 3;
 ```
-Note that the initializer list and literal and not a pointer type. There's no such thing as a pointer in `natolang`. More on that later.
-
 
 And also increment/decrement:
 ```c
@@ -81,7 +79,7 @@ Note that the good old "pre-increment (`++i`) is faster than post-increment (`i+
 
 #### Address Operators
 
-You may get the address of a variable or write to an address with `*` and `&` operator:
+You may get the address of a variable or use a variable as address with with `*` and `&` operator:
 
 ```c
 var a = 0;
@@ -90,7 +88,7 @@ var b = &a;
 printi(a); # prints "1"
 ```
 
-Note that `b` is not a pointer type - `*` just allows you to use the value of a variable as address, and `&` operator simply returns number, and "arrays" are not pointers too. More specifically:
+Note that `b` is not a pointer type - `*` just allows you to use the value of a variable as address, `&` operator simply returns the address of that variable, and "arrays" are not pointers. More specifically:
 
 ```c
 var a[10] = {100, 200, 300};
@@ -98,7 +96,6 @@ printi(a); # prints "100"
 *(&a+1) = 10;
 printi(a[1]); # prints "10"
 ```
-
 
 #### Flow Controls
 
