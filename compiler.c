@@ -146,16 +146,16 @@ int _next(int isdec) {
 
             if (do_ret) {
                 if (SYM.type == T_PLBL) { // was refered to by prev goto stmt.
+                    if (*pos++ != ':') return 0;
+
                     lbltab_t *l = lbl + SYM.val;
                     do {
                         bin_start[l->jaddr] = bin - bin_start;
+                        l = lbl + l->next;
                     } while (l->next != 0);
                     SYM.type = T_LBL;
                     SYM.val = bin - bin_start;
-                    if (*pos++ != ':') {
-                        log_error("line %d: label must ends with ':'.\n", line);
-                        return -1;
-                    }
+
                     continue;
                 }
                 return 0;
@@ -890,7 +890,7 @@ int _stmt() {
         NEXT();
     } else if (cur == TKN_GOTO) { 
         NEXT();
-        if (cur != T_LBL && !new_sym) {
+        if (cur != T_LBL && cur != T_PLBL && !new_sym) {
             log_error("line %d: goto: '%s' is not a label.\n", line, symname(symi));
             return -1;
         } else if (cur == T_NAME && new_sym) {
@@ -910,6 +910,8 @@ int _stmt() {
                 l = lbl + l->next;
             }
             l->next = lbli++;
+            NEXT();
+            return 0;
         } else if (cur == T_LBL) {
             *bin++ = J;
             *bin++ = SYM.val;
